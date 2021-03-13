@@ -14,6 +14,9 @@ namespace RopeMinikit
         protected const int InitialParticleTargets = 3;
         protected const int MaxRigidbodyConnections = 24;
 
+        public delegate void CollidedWithPole();
+        public static CollidedWithPole CollidedWithPoleObject;
+
         public struct Measurements
         {
             public float spawnCurveLength;
@@ -861,6 +864,10 @@ namespace RopeMinikit
 
                 // Check for overlap
                 var hitCount = Physics.OverlapSphereNonAlloc(pos, extendedRadius, collisionQueryBuffer, layerMask); // use a slightly larger sphere to catch more collisions
+                if(hitCount > 0)
+                {
+                    CollidedWithPoleObject?.Invoke();
+                }
                 for (int j = 0; j < hitCount && planeCount < MaxCollisionPlanesPerParticle; j++)
                 {
                     var collider = collisionQueryBuffer[j];
@@ -994,12 +1001,12 @@ namespace RopeMinikit
                     if (massMultiplier > 0.0f)
                     {
                         var impulse = particleTargetFeedbacks[i] * (particleMass * massMultiplier * invDtAndSolverIterations);
-                        c.rigidbody.AddForceAtPosition(impulse, c.target.position, ForceMode.Impulse);
+                        //c.rigidbody.AddForceAtPosition(impulse, c.target.position, ForceMode.Impulse);
 
                         if (c.rigidbodyDamping > 0.0f)
                         {
                             var normal = math.normalizesafe(impulse);
-                            c.rigidbody.SetPointVelocityNow(c.target.position, normal, 0.0f, c.rigidbodyDamping);
+                            //c.rigidbody.SetPointVelocityNow(c.target.position, normal, 0.0f, c.rigidbodyDamping);
                         }
                     }
                 }

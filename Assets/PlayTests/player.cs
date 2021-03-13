@@ -8,277 +8,515 @@ namespace Tests
 {
     public class player
     {
+        #region Completed Tests
         [UnityTest]
-        public IEnumerator alerts_game_manager_when_health_is_empty()
-        {
-            // Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 70;
-            player.Health = new Health(1);
-
-            GameObject obstacleGameObject = new GameObject("Obstacle");
-            obstacleGameObject.transform.tag = "Obstacle";
-            obstacleGameObject.transform.position = new Vector3(2, 0, 0);
-            Collider obstacleCollider = obstacleGameObject.AddComponent<BoxCollider>();
-            obstacleCollider.isTrigger = true;
-
-            GameManager gameManager = ScriptableObject.CreateInstance<GameManager>();
-
-            // Act
-            player.PlayerInput.Horizontal.Returns(1);
-
-            // Assert
-            yield return new WaitForSeconds(1.0f);
-            Assert.IsTrue(gameManager.GameOver);
-        }
-        [UnityTest]
-        public IEnumerator contact_with_waste_grants_debuff()
+        public IEnumerator alerts_game_manager_when_health_is_zero()
         {
             //Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 70;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            GameObject poleGameObject = CreatePole();
 
-            GameObject wasteGameObject = new GameObject("Waste");
-            wasteGameObject.transform.tag = "Waste";
-            wasteGameObject.transform.position = new Vector3(2, 0, 0);
-            Collider wasteCollider = wasteGameObject.AddComponent<BoxCollider>();
-            wasteCollider.isTrigger = true;
+            GameObject gameManagerObject = new GameObject("gameManager");
+            GameManager gameManager = gameManagerObject.AddComponent<GameManager>();
 
             // Act
             player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(1f);
 
             // Assert
-            yield return new WaitForSeconds(1f);
-            Assert.IsTrue(player.IsDebuffed);
+            Assert.IsTrue(gameManager.IsGameOver);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            poleGameObject.SetActive(false);
+            gameManagerObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator click_and_drag_left_moves_dog_left_when_dog_is_right()
+        {
+            // Arrange
+            CreateCamera(out GameObject cameraObject);
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog, new Vector3(2.0f, 0.0f, 2.0f));
+
+            player.Dog = dog;
+            dog.Player = player;
+
+            // Act
+            Vector3 playerScreenPos = Camera.main.WorldToScreenPoint(playerGameObject.transform.position);
+            player.PlayerInput.MousePosition.Returns(playerScreenPos);
+            player.PlayerInput.MouseLeftClicked.Returns(true);
+            yield return null;
+            player.PlayerInput.MousePosition.Returns(playerScreenPos - new Vector3(5.0f, 0.0f, 0.0f));
+            yield return new WaitForSeconds(1.0f);
+            player.PlayerInput.MouseLeftClicked.Returns(false);
+
+            // Assert
+            Assert.IsTrue(2.0f > dogGameObject.transform.position.x);
+
+            // Clean
+            cameraObject.SetActive(false);
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator click_and_drag_right_moves_dog_right_when_dog_is_left()
+        {
+            // Arrange
+            CreateCamera(out GameObject cameraObject);
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog, new Vector3(-2.0f, 0.0f, 2.0f));
+
+            player.Dog = dog;
+            dog.Player = player;
+
+            // Act
+            Vector3 playerScreenPos = Camera.main.WorldToScreenPoint(playerGameObject.transform.position);
+            player.PlayerInput.MousePosition.Returns(playerScreenPos);
+            player.PlayerInput.MouseLeftClicked.Returns(true);
+            yield return null;
+            player.PlayerInput.MousePosition.Returns(playerScreenPos + new Vector3(5.0f, 0.0f, 0.0f));
+            yield return new WaitForSeconds(1.0f);
+            player.PlayerInput.MouseLeftClicked.Returns(false);
+
+            // Assert
+            Assert.IsTrue(-2.0f < dogGameObject.transform.position.x);
+
+            // Clean
+            cameraObject.SetActive(false);
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator contact_with_obstacle_reduces_health_by_one()
         {
             //Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 70;
-
-            GameObject wasteGameObject = new GameObject("Obstacle");
-            wasteGameObject.transform.tag = "Obstacle";
-            wasteGameObject.transform.position = new Vector3(2, 0, 0);
-            Collider wasteCollider = wasteGameObject.AddComponent<BoxCollider>();
-            wasteCollider.isTrigger = true;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            GameObject obstacleGameObject = CreateObstacle();
 
             // Act
             player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(1f);
 
             // Assert
-            yield return new WaitForSeconds(1f);
             Assert.AreEqual(player.Health.Max - 1, player.Health.Current);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            obstacleGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator contact_with_pole_reduces_health_to_zero()
         {
             //Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 70;
-
-            GameObject poleGameObject = new GameObject("Pole");
-            poleGameObject.transform.tag = "Pole";
-            poleGameObject.transform.position = new Vector3(2, 0, 0);
-            Collider poleCollider = poleGameObject.AddComponent<BoxCollider>();
-            poleCollider.isTrigger = true;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            GameObject poleGameObject = CreatePole();
 
             // Act
             player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(1f);
 
             // Assert
-            yield return new WaitForSeconds(1f);
             Assert.AreEqual(0, player.Health.Current);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            poleGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator contact_with_waste_grants_debuff()
+        {
+            //Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            GameObject wasteGameObject = CreateWaste();
+
+            // Act
+            player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(1f);
+
+            // Assert
+            Assert.IsTrue(player.IsDebuffed);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            wasteGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator debuff_wears_off_after_three_seconds()
         {
             //Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 70;
-
-            GameObject wasteGameObject = new GameObject("Waste");
-            wasteGameObject.transform.tag = "Waste";
-            wasteGameObject.transform.position = new Vector3(2, 0, 0);
-            Collider wasteCollider = wasteGameObject.AddComponent<BoxCollider>();
-            wasteCollider.isTrigger = true;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            GameObject wasteGameObject = CreateWaste();
 
             // Act
             player.PlayerInput.Horizontal.Returns(1);
-
-            // Assert
             while (!player.IsDebuffed)
             {
                 yield return null;
             }
             yield return new WaitForSeconds(3.0f);
+
+            // Assert
             Assert.IsFalse(player.IsDebuffed);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            wasteGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator debuffed_with_negative_horizontal_input_moves_right()
         {
             //Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 1;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+
             float initY = player.transform.position.y;
             float initZ = player.transform.position.z;
 
             //Act
             player.PlayerInput.Horizontal.Returns(-1);
             player.IsDebuffed = true;
-
-            // Assert
             yield return new WaitForSeconds(0.3f);
 
+            // Assert
             Assert.IsTrue(player.transform.position.x > 0);
             Assert.AreEqual(initY, player.transform.position.y);
             Assert.AreEqual(initZ, player.transform.position.z);
+
+            // Clean
+            playerGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator debuffed_with_positive_horizontal_input_moves_left()
         {
             //Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 1;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+
             float initY = player.transform.position.y;
             float initZ = player.transform.position.z;
 
             //Act
             player.PlayerInput.Horizontal.Returns(1);
             player.IsDebuffed = true;
-
-            // Assert
             yield return new WaitForSeconds(0.3f);
 
+            // Assert
             Assert.IsTrue(player.transform.position.x < 0);
             Assert.AreEqual(initY, player.transform.position.y);
             Assert.AreEqual(initZ, player.transform.position.z);
+
+            // Clean
+            playerGameObject.SetActive(false);
         }
         [UnityTest]
-        public IEnumerator mouse_to_right_of_player_moves_dog_right()
+        public IEnumerator drags_dog_left()
         {
-            //Arrange
-            GameObject cameraObject = new GameObject("Main Camera");
-            cameraObject.AddComponent<Camera>();
-            cameraObject.transform.tag = "MainCamera";
-            cameraObject.transform.position = new Vector3(0, 10, 0);
-            cameraObject.transform.eulerAngles = new Vector3(67.72f, -0.103f, 0);
-
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-
-            GameObject dogGameObject = new GameObject("Dog");
-            Rigidbody dogRb = dogGameObject.AddComponent<Rigidbody>();
-            dogRb.useGravity = false;
-            dogRb.constraints = RigidbodyConstraints.FreezeRotation;
-            dogGameObject.transform.position = new Vector3(0, 0, 2);
-            player.Dog = dogGameObject;
-            float dogInitY = dogGameObject.transform.position.y;
-            float dogInitZ = dogGameObject.transform.position.z;
-
-            Vector3 playerScreenPosition = Camera.main.WorldToScreenPoint(playerGameObject.transform.position);
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog);
+            player.Dog = dog;
+            dog.Player = player;
+            player.LeashLength = 0.5f;
 
             // Act
-            player.PlayerInput.MousePosition.Returns(playerScreenPosition + new Vector3(2, 0, 0));
+            player.PlayerInput.Horizontal.Returns(-1);
+            yield return new WaitForSeconds(1.0f);
 
             // Assert
-            yield return new WaitForSeconds(1.0f);
-            Assert.IsTrue(dogGameObject.transform.position.x > 0);
-            Assert.AreEqual(dogInitY, dogGameObject.transform.position.y);
-            Assert.AreEqual(dogInitZ, dogGameObject.transform.position.z);
+            Assert.IsTrue(dogGameObject.transform.position.x < 0.0f);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
         }
         [UnityTest]
-        public IEnumerator mouse_to_left_of_player_moves_dog_left()
+        public IEnumerator drags_dog_right()
         {
-            //Arrange
-            GameObject cameraObject = new GameObject("Main Camera");
-            cameraObject.AddComponent<Camera>();
-            cameraObject.transform.tag = "MainCamera";
-            cameraObject.transform.position = new Vector3(0, 10, 0);
-            cameraObject.transform.eulerAngles = new Vector3(67.72f, -0.103f, 0);
-
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-
-            GameObject dogGameObject = new GameObject("Dog");
-            Rigidbody dogRb = dogGameObject.AddComponent<Rigidbody>();
-            dogRb.useGravity = false;
-            dogRb.constraints = RigidbodyConstraints.FreezeRotation;
-            dogGameObject.transform.position = new Vector3(0, 0, 2);
-            player.Dog = dogGameObject;
-            float dogInitY = dogGameObject.transform.position.y;
-            float dogInitZ = dogGameObject.transform.position.z;
-
-            Vector3 playerScreenPosition = Camera.main.WorldToScreenPoint(playerGameObject.transform.position);
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog);
+            player.Dog = dog;
+            dog.Player = player;
+            player.LeashLength = 0.5f;
 
             // Act
-            player.PlayerInput.MousePosition.Returns(playerScreenPosition - new Vector3(2, 0, 0));
+            player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(1.0f);
 
             // Assert
+            Assert.IsTrue(dogGameObject.transform.position.x > 0.0f);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator left_clicking_and_holding_creates_tension()
+        {
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog);
+
+            player.Dog = dog;
+            dog.Player = player;
+
+            // Act
+            player.PlayerInput.MouseLeftClicked.Returns(true);
+            yield return new WaitForSeconds(0.1f);
+
+            // Assert
+            Assert.IsTrue(player.InTension);
+
+            // Clean
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator obeys_leash_length_when_dragging_right()
+        {
+            // Arrange
+            CreateCamera(out GameObject cameraObject);
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog, new Vector3(1.0f, 0.0f, 2.0f));
+
+            player.Dog = dog;
+            dog.Player = player;
+
+            player.LeashLength = 1.0f;
+
+            // Act
+            Vector3 playerScreenPos = Camera.main.WorldToScreenPoint(playerGameObject.transform.position);
+            player.PlayerInput.MousePosition.Returns(playerScreenPos);
+            player.PlayerInput.MouseLeftClicked.Returns(true);
+            yield return null;
+            player.PlayerInput.MousePosition.Returns(playerScreenPos + new Vector3(5.0f, 0.0f, 0.0f));
+            yield return new WaitForSeconds(2.0f);
+            player.PlayerInput.MouseLeftClicked.Returns(false);
+
+            // Assert
+            Assert.AreEqual(playerGameObject.transform.position.x + player.LeashLength, player.dragPos.x);
+
+            // Clean
+            cameraObject.SetActive(false);
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator obeys_leash_length_when_dragging_left()
+        {
+            // Arrange
+            CreateCamera(out GameObject cameraObject);
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            CreateDog(out GameObject dogGameObject, out Dog dog, new Vector3(1.0f, 0.0f, 2.0f));
+
+            player.Dog = dog;
+            dog.Player = player;
+
+            player.LeashLength = 1.0f;
+
+            // Act
+            Vector3 playerScreenPos = Camera.main.WorldToScreenPoint(playerGameObject.transform.position);
+            player.PlayerInput.MousePosition.Returns(playerScreenPos);
+            player.PlayerInput.MouseLeftClicked.Returns(true);
+            yield return null;
+            player.PlayerInput.MousePosition.Returns(playerScreenPos - new Vector3(5.0f, 0.0f, 0.0f));
+            yield return new WaitForSeconds(2.0f);
+            player.PlayerInput.MouseLeftClicked.Returns(false);
+
+            // Assert
+            Assert.AreEqual(playerGameObject.transform.position.x - player.LeashLength, player.dragPos.x);
+
+            // Clean
+            cameraObject.SetActive(false);
+            playerGameObject.SetActive(false);
+            dogGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator obeys_max_x_pos_constraint()
+        {
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player, new Vector3(4.9f, 0.0f, 0.0f));
+
+
+            // Act
+            player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(0.5f);
+
+            // Assert
+            Assert.AreEqual(Obstacle.BoundXMax, playerGameObject.transform.position.x, 0.1f);
+
+            // Clean
+            playerGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator obeys_min_x_pos_constraint()
+        {
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player, new Vector3(-4.9f, 0.0f, 0.0f));
+
+            // Act
+            player.PlayerInput.Horizontal.Returns(-1);
+            yield return new WaitForSeconds(0.5f);
+
+            // Assert
+            Assert.AreEqual(Obstacle.BoundXMin, playerGameObject.transform.position.x, 0.1f);
+
+            // Clean
+            playerGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator obeys_negative_max_velocity_constraint()
+        {
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            playerGameObject.transform.position = new Vector3(5.0f, 0.0f, 0.0f);
+
+            // Act
+            player.PlayerInput.Horizontal.Returns(-1);
             yield return new WaitForSeconds(1.0f);
-            Assert.IsTrue(dogGameObject.transform.position.x < 0);
-            Assert.AreEqual(dogInitY, dogGameObject.transform.position.y);
-            Assert.AreEqual(dogInitZ, dogGameObject.transform.position.z);
+
+            // Assert
+            Assert.AreEqual(-player.MaxVel, player.Rb.velocity.x, 0.1f);
+
+            // Clean
+            playerGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator obeys_positive_max_velocity_constraint()
+        {
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+            playerGameObject.transform.position = new Vector3(-5.0f, 0.0f, 0.0f);
+
+            // Act
+            player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(1.0f);
+
+            // Assert
+            Assert.AreEqual(player.MaxVel, player.Rb.velocity.x, 0.1f);
+
+            // Clean
+            playerGameObject.SetActive(false);
+        }
+        [UnityTest]
+        public IEnumerator stops_with_no_horizontal_input()
+        {
+            // Arrange
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+
+            // Act
+            player.PlayerInput.Horizontal.Returns(1);
+            yield return new WaitForSeconds(0.3f);
+            player.PlayerInput.Horizontal.Returns(0);
+            yield return new WaitForSeconds(1.0f);
+
+            // Assert
+            Assert.AreEqual(0.0f, player.Rb.velocity.x, 0.1f);
+
+            // Clean
+            playerGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator with_negative_horizontal_input_moves_left()
         {
             // Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 1;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+
             float initY = player.transform.position.y;
             float initZ = player.transform.position.z;
 
             // Act
             player.PlayerInput.Horizontal.Returns(-1);
-
-            // Assert
             yield return new WaitForSeconds(0.3f);
 
+            // Assert
             Assert.IsTrue(player.transform.position.x < 0);
             Assert.AreEqual(initY, player.transform.position.y);
             Assert.AreEqual(initZ, player.transform.position.z);
+
+            // Clean
+            playerGameObject.SetActive(false);
         }
         [UnityTest]
         public IEnumerator with_positive_horizontal_input_moves_right()
         {
             // Arrange
-            GameObject playerGameObject = new GameObject("Player");
-            Player player = playerGameObject.AddComponent<Player>();
-            player.PlayerInput = Substitute.For<IPlayerInput>();
-            player.MoveSpeed = 1;
+            CreatePlayer(out GameObject playerGameObject, out Player player);
+
             float initY = player.transform.position.y;
             float initZ = player.transform.position.z;
 
             // Act
             player.PlayerInput.Horizontal.Returns(1);
-
-            // Assert
             yield return new WaitForSeconds(0.3f);
 
+            // Assert
             Assert.IsTrue(player.transform.position.x > 0);
-            Debug.Log(player.transform.position.x);
             Assert.AreEqual(initY, player.transform.position.y);
             Assert.AreEqual(initZ, player.transform.position.z);
+
+            // Clean
+            playerGameObject.SetActive(false);
         }
+        #endregion
+
+        #region Helper Methods
+        private void CreateCamera(out GameObject cameraObject)
+        {
+            cameraObject = new GameObject("Main Camera");
+            cameraObject.AddComponent<Camera>();
+            cameraObject.transform.tag = "MainCamera";
+            cameraObject.transform.position = new Vector3(0, 10, 0);
+            cameraObject.transform.eulerAngles = new Vector3(67.72f, -0.103f, 0);
+        }
+        private void CreateDog(out GameObject dogGameObject, out Dog dog)
+        {
+            dogGameObject = new GameObject("Dog");
+            dogGameObject.transform.position = new Vector3(0, 0, 2);
+            dog = dogGameObject.AddComponent<Dog>();
+        }
+        private void CreateDog(out GameObject dogGameObject, out Dog dog, Vector3 spawnPosition)
+        {
+            dogGameObject = new GameObject("Dog");
+            dogGameObject.transform.position = spawnPosition;
+            dog = dogGameObject.AddComponent<Dog>();
+        }
+        private GameObject CreateObstacle()
+        {
+            GameObject obstacleGameObject = new GameObject("Obstacle");
+            obstacleGameObject.transform.tag = "Obstacle";
+            obstacleGameObject.transform.position = new Vector3(2, 0, 0);
+            obstacleGameObject.AddComponent<Obstacle>();
+            return obstacleGameObject;
+        }
+        private void CreatePlayer(out GameObject playerGameObject, out Player player)
+        {
+            playerGameObject = new GameObject("Player");
+            player = playerGameObject.AddComponent<Player>();
+            player.PlayerInput = Substitute.For<IPlayerInput>();
+        }
+        private void CreatePlayer(out GameObject playerGameObject, out Player player, Vector3 spawnPosition)
+        {
+            playerGameObject = new GameObject("Player");
+            playerGameObject.transform.position = spawnPosition;
+            player = playerGameObject.AddComponent<Player>();
+            player.PlayerInput = Substitute.For<IPlayerInput>();
+        }
+        private GameObject CreatePole()
+        {
+            GameObject poleGameObject = new GameObject("Pole");
+            poleGameObject.transform.tag = "Pole";
+            poleGameObject.transform.position = new Vector3(2, 0, 0);
+            poleGameObject.AddComponent<Obstacle>();
+            return poleGameObject;
+        }
+        private GameObject CreateWaste()
+        {
+            GameObject wasteGameObject = new GameObject("Waste");
+            wasteGameObject.transform.tag = "Waste";
+            wasteGameObject.transform.position = new Vector3(2, 0, 0);
+            wasteGameObject.AddComponent<Obstacle>();
+            return wasteGameObject;
+        }
+        #endregion
     }
 }

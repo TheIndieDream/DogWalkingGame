@@ -4,4 +4,5 @@ public interface IPlayerInput
 {
 	float Horizontal { get; }
 	Vector3 MousePosition { get; }
+	bool MouseLeftClicked { get; }
 }
